@@ -84,17 +84,17 @@ class UrlEvidence:
                 self.platform = 'twitter.com'
             
             if self.platform == 'twitter.com':
-                self.profile = self.get_param(1)
-                self.content = self.get_param(3)
+                self.profile = self.get_path_segment(1)
+                self.content = self.get_path_segment(3)
             
             if self.platform == 'facebook.com':
-                self.profile = self.get_param(1)
-                self.content = self.get_param(3)
+                self.profile = self.get_path_segment(1)
+                self.content = self.get_path_segment(3)
             
             if self.platform == 'reddit.com':
-                self.community = self.get_param(2)
-                self.profile = self.get_param(6) or self.get_param(4)
-                self.content = self.get_param(5)
+                self.community = self.get_path_segment(2)
+                self.profile = self.get_path_segment(6) or self.get_path_segment(4)
+                self.content = self.get_path_segment(5)
                 
             if self.platform == 'youtube.com':
                 params = parse_qs(self.query)
@@ -103,11 +103,11 @@ class UrlEvidence:
             
             if self.platform == 'youtu.be':
                 self.platform = 'youtube.com'
-                self.content = self.get_param(1)
+                self.content = self.get_path_segment(1)
       
-    def get_param(self, idx):
+    def get_path_segment(self, idx):
         try:
-            param = self.params.split('\\')[idx]
+            param = self.path.split('/')[idx]
         except IndexError:
             return None
         else:
