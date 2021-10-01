@@ -1,0 +1,94 @@
+---
+title: "Descriptive Statistics"
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE, 
+  cache = FALSE
+)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+theme_set(theme_classic())
+
+codes_path <- file.path('..', 'data', 'codes.csv')
+reddit_path <- file.path('..', 'data', 'reddit.csv')
+quotes_path <- file.path('..', 'data', 'quotes.csv')
+docs_path <- file.path('..', 'data', 'docs.csv')
+
+codes_df <- readr::read_csv(codes_path, show_col_types = FALSE)
+reddit_df <- readr::read_csv(reddit_path, show_col_types = FALSE)
+quotes_df <- readr::read_csv(quotes_path, show_col_types = FALSE)
+docs_df <- readr::read_csv(docs_path, show_col_types = FALSE)
+```
+
+How many comments in the megathread according to Reddit API?
+
+What limitations on comments that this does not include (in API docs)?
+
+```{r}
+nrow(reddit_df)
+```
+
+How many comments were imported into Atlas for coding? 
+
+```{r}
+nrow(docs_df)
+```
+
+
+How many comments were deleted by their author (text reads: "[REMOVED]")?
+
+```{r}
+nrow(filter(docs_df, removed == TRUE))
+```
+
+Leaving us with total comments that could have been coded:
+
+```{r}
+docs_df <- filter(docs_df, removed == FALSE)
+
+nrow(docs_df)
+```
+
+The number of comments that did get coded?
+
+```{r}
+nrow(docs_df %>% filter(is.na(codes)))
+```
+
+Unique redditors in the thread:
+
+```{r}
+reddit_df %>%
+  filter(!is.na(author)) %>%
+  select(author) %>%
+  unique() %>%
+  nrow()
+```
+
+Comments per author:
+
+```{r}
+reddit_df %>%
+  filter(!is.na(author)) %>%
+  count(author, name = 'posts_per_author') %>%
+  count(posts_per_author, name = 'frequency') %>%
+  ggplot(aes(x = posts_per_author, y = frequency)) +
+  geom_bar(stat = 'identity', width = 0.5, fill = 'tomato2') +
+  xlim(c(0, 25)) +
+  labs(title = 'Posts per author distribution') +
+  xlab(label = 'n Posts') +
+  ylab(label = 'Frequency') 
+
+```
+
+
+
