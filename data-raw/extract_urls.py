@@ -13,7 +13,7 @@ from urllib.parse import urlparse, parse_qs
 import bs4
 import markdown
 
-INFILE = pathlib.Path.cwd() / 'data-raw' / 'quotation_manager_output.csv'
+INFILE = pathlib.Path.cwd() / 'data-raw' / 'quotes.csv'
 OUTFILE = pathlib.Path.cwd() / 'data-raw' / 'extracted_urls.csv'
 
 
