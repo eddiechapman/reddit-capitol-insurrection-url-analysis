@@ -55,8 +55,8 @@ quotes_df <-
 
 codes_df <- 
   quotes_df %>%
-  mutate(code = stringr::str_split(codes, ' ')) %>%
-  tidyr::unnest_longer(codes) %>%
+  mutate(code = stringr::str_split(codes, '\n')) %>%
+  tidyr::unnest_longer(code) %>%
   select(quote_id, doc_id, code)
 
 
