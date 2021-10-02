@@ -11,54 +11,17 @@ import re
 from urllib.parse import urlparse, parse_qs
 
 import bs4
-import markdown
+from markdown import markdown
 
 INFILE = pathlib.Path.cwd() / 'data-raw' / 'quotes.csv'
 OUTFILE = pathlib.Path.cwd() / 'data-raw' / 'extracted_urls.csv'
 
-
-class NoUrlsFoundException(Exception):
-    def __init__(self):
-        self.message = 'No URLs were found in quotation content'
-        super().__init__(self.message)
-
-
-class MultipleUrlsFoundException(Exception):
-    def __init__(self, n):
-        self.message = f'{n} URLs were found in quotation content'
-        super().__init__(self.message)
-
-
-def strip_markup(content):
-    html = markdown.markdown(content)
-    soup = bs4.BeautifulSoup(html, 'html.parser')
     
-    return ' '.join(soup.stripped_strings)
-
-
-def _extract_url(content):
-    pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-
-    return re.findall(pattern, content)
-
-
-def extract_url(content):
-    urls = set(m for m in _extract_url(content))
-    
-    if not urls:
-        raise NoUrlsFoundException
-    elif len(urls) > 1:
-        raise MultipleUrlsFoundException(len(urls))
-    
-    return list(urls)[0]
-    
-
 class UrlEvidence:
     
     def __init__(self, document_id, quote_id, **kwargs):
         self.quote_id = quote_id
         self.document_id = document_id
-        self.note = kwargs.get('note')
         self.url = kwargs.get('url')
         self.netloc = kwargs.get('netloc')
         self.path = kwargs.get('path')
@@ -84,28 +47,54 @@ class UrlEvidence:
                 self.platform = 'twitter.com'
             
             if self.platform == 'twitter.com':
-                self.profile = self.get_path_segment(1)
-                self.content = self.get_path_segment(3)
+                self.profile = self.path_segment(1)
+                self.content = self.path_segment(3)
             
             if self.platform == 'facebook.com':
-                self.profile = self.get_path_segment(1)
-                self.content = self.get_path_segment(3)
+                self.profile = self.path_segment(1)
+                self.content = self.path_segment(3)
             
             if self.platform == 'reddit.com':
-                self.community = self.get_path_segment(2)
-                self.profile = self.get_path_segment(6) or self.get_path_segment(4)
-                self.content = self.get_path_segment(5)
+                self.community = self.path_segment(2)
+                self.profile = self.path_segment(6) or self.path_segment(4)
+                self.content = self.path_segment(5)
+                
+            if self.platform == 'm.youtube.com':
+                self.platform = 'youtube.com'
                 
             if self.platform == 'youtube.com':
                 params = parse_qs(self.query)
                 if params:
-                    self.content = params.get('v', [])[0]
+                    try:
+                        self.content = params.get('v', [])[0]
+                    except IndexError:
+                        self.content = None
             
             if self.platform == 'youtu.be':
                 self.platform = 'youtube.com'
-                self.content = self.get_path_segment(1)
+                self.content = self.path_segment(1)
+                
+            if self.platform == 'instagram.com':
+                if self.path_segment(1) == 'p':
+                    self.content = self.path_segment(2)
+                    
+            if self.platform == 'pscp.tv':
+                if self.path_segment(1) != 'w':
+                    self.profile = self.path_segment(2)
+                    self.content = self.path_segment(3)
       
-    def get_path_segment(self, idx):
+    def path_segment(self, idx):
+        """
+        >>> self.path
+        '/p/CJ3LQcHgFZ0/'
+        >>> self.path_segment(0)
+        ''
+        >>> self.path_segment(1)
+        'p'
+        >>> self.path_segment(2)
+        'CJ3LQcHgFZ0'
+        
+        """
         try:
             param = self.path.split('/')[idx]
         except IndexError:
@@ -117,7 +106,6 @@ class UrlEvidence:
         return {
             'quote_id': self.quote_id,
             'document_id': self.document_id,
-            'note': self.note,
             'url': self.url,
             'netloc': self.netloc,
             'path': self.path,
@@ -133,19 +121,8 @@ class UrlEvidence:
     @classmethod
     def fieldnames(cls):
         return [
-            'quote_id',
-            'document_id',
-            'note',
-            'url',
-            'netloc',
-            'path',
-            'params',
-            'query',
-            'fragment',
-            'platform',
-            'profile',
-            'content',
-            'community'
+            'quote_id', 'document_id', 'url', 'netloc', 'path', 'params', 
+            'query', 'fragment', 'platform', 'profile', 'content', 'community'
         ]
         
 
@@ -156,30 +133,28 @@ def main():
         reader = csv.DictReader(f)
         
         for row in reader:
-            if 'evidence' in row['Codes']:
-                content = strip_markup(row['Quotation Content'])
+            if not 'evidence' in row['Codes']:
+                continue
+              
+            quote = row['Quotation Content']
+            doc_id = row['Document']
+            quote_id = row['ID']
+            
+            soup = bs4.BeautifulSoup(markdown(quote), 'html.parser')
+            content = ' '.join(soup.stripped_strings)
 
-                try:
-                    url = extract_url(content)
-                except (NoUrlsFoundException, MultipleUrlsFoundException) as e:
-                    evidence_url = UrlEvidence(
-                        document_id=row['Document'], 
-                        quote_id=row['ID'], 
-                        note=e.message
-                    )
-                else:
-                    evidence_url = UrlEvidence(
-                        document_id=row['Document'], 
-                        quote_id=row['ID'], 
-                        url=url  
-                    )
-                
-                parsed_url_rows.append(evidence_url.to_dict())
+            url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+
+            for url in re.findall(url_pattern, content):
+                url_info = UrlEvidence(doc_id, quote_id, url=url)
+                parsed_url_rows.append(url_info.to_dict())
 
     with OUTFILE.open('w') as f:
+        print(f'Writing extracted urls to {OUTFILE}')
         writer = csv.DictWriter(f, fieldnames=UrlEvidence.fieldnames())
         writer.writeheader()
         writer.writerows(parsed_url_rows)
+        print('Output write successful.')
 
 
 if __name__ == '__main__':
