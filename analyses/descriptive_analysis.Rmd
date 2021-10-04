@@ -22,11 +22,13 @@ codes_path <- file.path('..', 'data', 'codes.csv')
 reddit_path <- file.path('..', 'data', 'reddit.csv')
 quotes_path <- file.path('..', 'data', 'quotes.csv')
 docs_path <- file.path('..', 'data', 'docs.csv')
+urls_path <- file.path('..', 'data', 'urls.csv')
 
 codes_df <- readr::read_csv(codes_path, show_col_types = FALSE)
 reddit_df <- readr::read_csv(reddit_path, show_col_types = FALSE)
 quotes_df <- readr::read_csv(quotes_path, show_col_types = FALSE)
 docs_df <- readr::read_csv(docs_path, show_col_types = FALSE)
+urls_df <- readr::read_csv(urls_path, show_col_types = FALSE)
 ```
 
 How many comments in the megathread according to Reddit API?
@@ -90,5 +92,154 @@ reddit_df %>%
 
 ```
 
+Looking at comments per hour
+
+```{r}
+reddit_df %>%
+  filter(!is.na(author)) %>%
+  mutate(hourly = ceiling_date(created_utc, 'hours')) %>%
+  count(hourly) %>%
+  ggplot(aes(x = hourly)) +
+  geom_line(aes(y = n))
+```
 
 
+Peak period close-up:
+
+
+```{r}
+reddit_df %>%
+  filter(!is.na(author)) %>%
+  filter(created_utc > '2021-01-06 15:00:00' & created_utc < '2021-01-10 00:00:00') %>%
+  mutate(hourly = ceiling_date(created_utc, 'hours')) %>%
+  count(hourly) %>%
+  ggplot(aes(x = hourly)) +
+  geom_line(aes(y = n)) +
+  labs(title = 'Comment rate during peak period',
+       subtitle = 'Comments per hour between January 6th and January 10th') +
+  xlab(label = '') +
+  ylab(label = 'comments per hour') 
+
+```
+
+
+"productive" vs. "unproductive" comments 
+
+Grouping codes into categories
+
+```{r}
+code_categories <- tribble(
+  ~code,             ~category,
+  '!!!',             'unrelated',
+  'r/datahorders',   'unrelated',
+  'outside_project', 'unrelated',
+  'scope',           'unrelated',
+  'participants',    'unrelated',
+  'fbi',             'unrelated',
+  'evidence',				 'active_work',
+  'saving',	         'active_work',
+  'strategy',	       'active_work',
+  'seeding',         'active_work',
+  'analysis',				 'commentary',
+  'encouragement',   'commentary',
+  'caution',				 'commentary',
+  'motivation',			 'commentary',
+  'removal',         'commentary',
+  'doxing',				   'unproductive',
+  'arguing',				 'unproductive',
+  'NA',              'unproductive'
+)
+```
+
+
+
+```{r}
+
+codes_df %>%
+  mutate(code = tidyr::replace_na(code, 'NA')) %>%
+  left_join(code_categories) %>%
+  left_join(reddit_df, by = c('doc_id' = 'comment_id')) %>%
+  filter(category != 'unrelated') %>%
+  filter(created_utc > '2021-01-06 15:00:00' & created_utc < '2021-01-10 00:00:00') %>%
+  mutate(hourly = ceiling_date(created_utc, 'hours')) %>%
+  group_by(hourly, category) %>%
+  summarize(category_comments_per_hour = n()) %>%
+  unique() %>%
+  tidyr::pivot_wider(names_from = category, values_from = category_comments_per_hour, values_fill = 0) %>%
+  ggplot(aes(x = hourly)) +
+  geom_area(aes(y = active_work + commentary + unproductive, fill = 'active_work')) +
+  geom_area(aes(y = commentary + unproductive, fill = 'commentary')) +
+  geom_area(aes(y = unproductive, fill = 'unproductive')) +
+  labs(title = 'Comment rate by activity type',
+       subtitle = 'During peak activity, Jan. 6th - Jan. 10th') +
+  xlab(label = '') +
+  ylab(label = 'comments per hour') +
+  scale_fill_manual(name='',
+                    values = c('active_work' = '#00ba38', 'commentary' = '#f8766d', 'unproductive' = '#8bf4f4')) +  # line color
+  theme(panel.grid.minor = element_blank())  # turn off minor grid
+
+```
+
+Upvotes for duplicate URL submissions:
+
+```{r}
+# need to account for a document containing duplicate URLs in itself
+
+duplicate_submissions <- 
+  urls_df %>%
+  filter(!is.na(content)) %>%
+  distinct(document_id, content, .keep_all = TRUE) %>%
+  group_by(content) %>%
+  mutate(n_submitted = n()) %>%
+  ungroup() %>%
+  filter(n_submitted > 1)  %>%
+  select(document_id, profile, content, n_submitted)
+
+```
+
+How many submissions total? 
+
+```{r}
+nrow(urls_df)
+```
+
+
+How many comparable submissions? (coming from a major source, able to parse out account name, content name from URL string)
+
+```{r}
+nrow(filter(urls_df, !is.na(content)))
+```
+
+How many unique comparable submissions?
+
+```{r}
+nrow(filter(urls_df, !is.na(content)) %>% distinct(content))
+```
+
+How many submissions duplicated a previously submitted URL?
+
+```{r}
+nrow(filter(urls_df, !is.na(content))) - nrow(filter(urls_df, !is.na(content)) %>% distinct(content))
+```
+
+Comparing upvotes for duplicated submissions
+
+```{r}
+duplicate_submissions %>%
+  left_join(reddit_df, by = c('document_id' = 'comment_id')) %>%
+  select(content, n_submitted, created_utc, score, author, document_id) %>%
+  arrange(desc(n_submitted), content, created_utc) %>%
+  group_by(content) %>%
+  mutate(order = dense_rank(created_utc)) %>%
+  filter(n_submitted > 3) %>%
+  ggplot(aes(x = order, y = score)) +
+  geom_point() +
+  # scale_y_log10() +
+  facet_wrap(~ content, scales = 'free', nrow = 5)
+
+# use facet_wrap to plot multiple charts at once
+# group on content (trim to the top 10 most shared content URLs)
+# add column for the posting order within content
+# plot upvotes vs. order
+
+```
