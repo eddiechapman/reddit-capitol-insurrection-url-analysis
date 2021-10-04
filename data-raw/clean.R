@@ -21,7 +21,7 @@ reddit_df <-
     controversiality
   ) %>%
   mutate(
-    created_utc = as_datetime(created_utc, tz='America/Chicago'),
+    created_utc = as_datetime(created_utc, tz='US/Central'),
   )
 
 docs_df <-
