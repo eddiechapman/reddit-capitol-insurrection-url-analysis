@@ -14,7 +14,6 @@ reddit_df <-
   select(
     comment_id = id, 
     author, 
-    created, 
     created_utc, 
     score, 
     ups, 
@@ -23,7 +22,6 @@ reddit_df <-
   ) %>%
   mutate(
     created_utc = as_datetime(created_utc, tz='America/Chicago'),
-    created = as_datetime(created, tz='America/Chicago')
   )
 
 docs_df <-
