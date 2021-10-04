@@ -25,10 +25,15 @@ docs_path <- file.path('..', 'data', 'docs.csv')
 urls_path <- file.path('..', 'data', 'urls.csv')
 
 codes_df <- readr::read_csv(codes_path, show_col_types = FALSE)
-reddit_df <- readr::read_csv(reddit_path, show_col_types = FALSE)
 quotes_df <- readr::read_csv(quotes_path, show_col_types = FALSE)
 docs_df <- readr::read_csv(docs_path, show_col_types = FALSE)
 urls_df <- readr::read_csv(urls_path, show_col_types = FALSE)
+
+# for some reason the datetime column reads as UTC, not US central so I manually set it here
+reddit_df <- 
+  readr::read_csv(reddit_path, show_col_types = FALSE) %>% 
+  mutate(created_utc = lubridate::as_datetime(created_utc, tz='US/Central'))
+
 ```
 
 How many comments in the megathread according to Reddit API?
@@ -79,11 +84,45 @@ reddit_df %>%
 Comments per author:
 
 ```{r}
-reddit_df %>%
+comments_per_author <-
+  reddit_df %>%
   filter(!is.na(author)) %>%
-  count(author, name = 'posts_per_author') %>%
-  count(posts_per_author, name = 'frequency') %>%
-  ggplot(aes(x = posts_per_author, y = frequency)) +
+  count(author, name = 'n_comments')
+
+comments_per_author
+```
+
+```{r}
+comments_per_author %>%
+  count(n_comments, name = 'frequency')
+```
+
+```{r}
+case_activity_level <- function(n_comments) {
+  case_when(
+    n_comments == 1 ~ 'low',
+    n_comments <= 5 ~ 'med',
+    n_comments >= 6 ~ 'high'
+  )
+}
+
+comments_per_author <- 
+  comments_per_author %>%
+  mutate('activity_level' = case_activity_level(n_comments))
+
+comments_per_author %>%
+  group_by(activity_level) %>%
+  summarize(
+    accounts = n(),
+    comments = sum(n_comments)
+  )
+```
+
+
+```{r}
+comments_per_author %>%
+  count(n_comments, name = 'frequency') %>%
+  ggplot(aes(x = n_comments, y = frequency)) +
   geom_bar(stat = 'identity', width = 0.5, fill = 'tomato2') +
   xlim(c(0, 25)) +
   labs(title = 'Posts per author distribution') +
@@ -92,29 +131,75 @@ reddit_df %>%
 
 ```
 
-Looking at comments per hour
+
+
+What is the time range of the thread?
+
+Earliest comment: 
+
+```{r}
+slice_min(reddit_df, created_utc)['created_utc']
+```
+
+Final comment:
+
+
+```{r}
+slice_max(reddit_df, created_utc)['created_utc']
+```
+
+
+
+Looking at comments per day
 
 ```{r}
 reddit_df %>%
   filter(!is.na(author)) %>%
-  mutate(hourly = ceiling_date(created_utc, 'hours')) %>%
-  count(hourly) %>%
-  ggplot(aes(x = hourly)) +
-  geom_line(aes(y = n))
+  mutate(daily = floor_date(created_utc, 'days')) %>%
+  count(daily) 
 ```
 
+
+```{r}
+reddit_df %>%
+  filter(!is.na(author)) %>%
+  mutate(daily = ceiling_date(created_utc, 'days')) %>%
+  count(daily) %>%
+  ggplot(aes(x = daily, y = n)) +
+  geom_bar(stat = 'identity')
+```
+
+
+What was the peak period in comments per hour?
+
+```{r}
+reddit_df %>%
+  filter(!is.na(author)) %>%
+  mutate(hourly = floor_date(created_utc, 'hours')) %>%
+  count(hourly) %>%
+  arrange(hourly)
+
+```
+
+I would say peak period was January 6th, 3:00 pm (15:00) through January 10th, 12:00 pm (23:59)
+
+```{r peak_period}
+peak_period_start <- '2021-01-06 15:00:00'
+peak_period_end <- '2021-01-11 00:00:00'
+```
 
 Peak period close-up:
 
 
-```{r}
+```{r }
 reddit_df %>%
   filter(!is.na(author)) %>%
-  filter(created_utc > '2021-01-06 15:00:00' & created_utc < '2021-01-10 00:00:00') %>%
-  mutate(hourly = ceiling_date(created_utc, 'hours')) %>%
+  filter(created_utc > '2021-01-06 15:00:00' & created_utc < '2021-01-11 00:00:00') %>%
+  mutate(hourly = floor_date(created_utc, 'hours')) %>%
   count(hourly) %>%
-  ggplot(aes(x = hourly)) +
-  geom_line(aes(y = n)) +
+  ggplot(aes(x = hourly, y = n)) +
+  #geom_line(aes(y = n)) +
+  geom_bar(stat = 'identity') +
   labs(title = 'Comment rate during peak period',
        subtitle = 'Comments per hour between January 6th and January 10th') +
   xlab(label = '') +
@@ -160,8 +245,8 @@ codes_df %>%
   left_join(code_categories) %>%
   left_join(reddit_df, by = c('doc_id' = 'comment_id')) %>%
   filter(category != 'unrelated') %>%
-  filter(created_utc > '2021-01-06 15:00:00' & created_utc < '2021-01-10 00:00:00') %>%
-  mutate(hourly = ceiling_date(created_utc, 'hours')) %>%
+  filter(created_utc > '2021-01-06 15:00:00' & created_utc < '2021-01-11 00:00:00') %>%
+  mutate(hourly = floor_date(created_utc, 'hours')) %>%
   group_by(hourly, category) %>%
   summarize(category_comments_per_hour = n()) %>%
   unique() %>%
@@ -171,7 +256,7 @@ codes_df %>%
   geom_area(aes(y = commentary + unproductive, fill = 'commentary')) +
   geom_area(aes(y = unproductive, fill = 'unproductive')) +
   labs(title = 'Comment rate by activity type',
-       subtitle = 'During peak activity, Jan. 6th - Jan. 10th') +
+       subtitle = 'During peak activity, Jan. 6th - Jan. 9th') +
   xlab(label = '') +
   ylab(label = 'comments per hour') +
   scale_fill_manual(name='',
