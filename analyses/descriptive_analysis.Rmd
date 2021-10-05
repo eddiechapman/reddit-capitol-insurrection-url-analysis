@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
 ```{r}
 library(dplyr)
 library(ggplot2)
+library(lubridate)
 
 theme_set(theme_classic())
 
@@ -192,7 +193,8 @@ Peak period close-up:
 
 
 ```{r }
-reddit_df %>%
+p <-
+  reddit_df %>%
   filter(!is.na(author)) %>%
   filter(created_utc > '2021-01-06 15:00:00' & created_utc < '2021-01-11 00:00:00') %>%
   mutate(hourly = floor_date(created_utc, 'hours')) %>%
@@ -204,6 +206,10 @@ reddit_df %>%
        subtitle = 'Comments per hour between January 6th and January 10th') +
   xlab(label = '') +
   ylab(label = 'comments per hour') 
+
+p
+
+ggsave('comment_rate_peak.png', plot = last_plot(), scale = 1, dpi = 300)
 
 ```
 
@@ -310,21 +316,34 @@ nrow(filter(urls_df, !is.na(content))) - nrow(filter(urls_df, !is.na(content)) %
 Comparing upvotes for duplicated submissions
 
 ```{r}
-duplicate_submissions %>%
+p <- 
+  duplicate_submissions %>%
   left_join(reddit_df, by = c('document_id' = 'comment_id')) %>%
   select(content, n_submitted, created_utc, score, author, document_id) %>%
   arrange(desc(n_submitted), content, created_utc) %>%
   group_by(content) %>%
   mutate(order = dense_rank(created_utc)) %>%
-  filter(n_submitted > 3) %>%
+  mutate(group_max = max(score)) %>%
+  ungroup() %>%
+  mutate(is_max = if_else(score == group_max, TRUE, FALSE)) %>%
+  group_by(content) %>%
+  filter(max(order) > 2) %>%
+  filter(max(score) - min(score) > 5) %>%
+  mutate(content = group_indices()) %>%
   ggplot(aes(x = order, y = score)) +
-  geom_point() +
-  # scale_y_log10() +
-  facet_wrap(~ content, scales = 'free', nrow = 5)
+  geom_line(size = 0.5) +
+  geom_point(aes(color = is_max), size = 0.6) +
+  theme(axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        legend.position = 'none') +
+  labs(title = 'Score for duplicate URL submissions') +
+  xlab(label = '') +
+  ylab(label = 'score') +
+  scale_y_log10() +
+  scale_color_manual(values = c('black', 'red')) +
+  facet_wrap(~ content, scales = 'fixed', nrow = 5, shrink = FALSE)
 
-# use facet_wrap to plot multiple charts at once
-# group on content (trim to the top 10 most shared content URLs)
-# add column for the posting order within content
-# plot upvotes vs. order
+p
 
+ggsave('duplicate_url_scores.png', plot = last_plot(), scale = 1, dpi = 300)
 ```
