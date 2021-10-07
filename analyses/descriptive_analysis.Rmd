@@ -12,6 +12,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Data import
+
 ```{r}
 library(dplyr)
 library(ggplot2)
@@ -36,6 +38,8 @@ reddit_df <-
   mutate(created_utc = lubridate::as_datetime(created_utc, tz='US/Central'))
 
 ```
+
+## Number of comments
 
 How many comments in the megathread according to Reddit API?
 
@@ -72,6 +76,8 @@ The number of comments that did get coded?
 nrow(docs_df %>% filter(is.na(codes)))
 ```
 
+## Number of redditors
+
 Unique redditors in the thread:
 
 ```{r}
@@ -97,6 +103,8 @@ comments_per_author
 comments_per_author %>%
   count(n_comments, name = 'frequency')
 ```
+
+### Activity level
 
 ```{r}
 case_activity_level <- function(n_comments) {
@@ -132,24 +140,24 @@ comments_per_author %>%
 
 ```
 
-
+## Time ranges
 
 What is the time range of the thread?
 
-Earliest comment: 
+### First comment
 
 ```{r}
 slice_min(reddit_df, created_utc)['created_utc']
 ```
 
-Final comment:
+### Last comment
 
 
 ```{r}
 slice_max(reddit_df, created_utc)['created_utc']
 ```
 
-
+### Comments per day
 
 Looking at comments per day
 
@@ -170,6 +178,7 @@ reddit_df %>%
   geom_bar(stat = 'identity')
 ```
 
+### Comments per hour
 
 What was the peak period in comments per hour?
 
@@ -213,6 +222,95 @@ ggsave('comment_rate_peak.png', plot = last_plot(), scale = 1, dpi = 300)
 
 ```
 
+## Codes 
+
+Total number of codes assigned
+
+
+```{r}
+nrow(codes_df)
+```
+
+Average codes per document
+
+```{r}
+codes_df %>%
+  count(doc_id) %>%
+  summarize(mean = mean(n))
+```
+
+Code frequencies
+
+```{r}
+codes_df %>%
+  count(code) %>%
+  mutate(code = forcats::fct_reorder(code, n, .desc = FALSE)) %>%
+  ggplot(aes(x = code, y = n)) +
+  geom_bar(stat = 'identity', width = 0.5, fill = 'tomato2') +
+  coord_flip() +
+  labs(title = 'Code frequencies',
+       subtitle = 'All codes') +
+  xlab(label = '') +
+  ylab(label = '')
+```
+       
+```{r}
+non_activity_codes <- c(
+  '!!!', 
+  'r/datahorders', 
+  'outside_project', 
+  'scope', 
+  'participants', 
+  'fbi'
+)
+
+
+p <- codes_df %>%
+  distinct(doc_id, code) %>%
+  filter(!(code %in% non_activity_codes)) %>%
+  count(code) %>%
+  mutate(code = forcats::fct_reorder(code, n, .desc = FALSE)) %>%
+  ggplot(aes(x = code, y = n)) +
+  geom_bar(stat = 'identity', width = 0.5, fill = 'tomato2') +
+  coord_flip() +
+  labs(title = 'Thread activities') +
+  xlab(label = '') +
+  ylab(label = 'Number of comments')
+
+p
+
+ggsave('thread_activities.png', plot = last_plot(), scale = 1, dpi = 300)
+
+```
+
+Code stats
+
+```{r}
+p <- reddit_df %>%
+  select(doc_id = comment_id, author, score) %>%
+  left_join(codes_df) %>%
+  left_join(comments_per_author) %>%
+  filter(!is.na(code)) %>%
+  filter(!is.na(activity_level)) %>%
+  filter(!(code %in% non_activity_codes)) %>%
+  group_by(code) %>%
+  ggplot(aes(x = code, fill = activity_level)) +
+  geom_bar(stat = 'count', 
+           position = position_dodge(),
+           width = 0.7) +
+  scale_fill_manual(values = c('low' = 'firebrick', 'med' = 'steelblue', 'high' = 'darkgreen')) +
+  xlab('') +
+  labs(title = 'Thread activities by author engagement level') +
+  coord_flip()
+
+p
+
+ggsave('activities_by_engagement_level.png', plot = last_plot(), scale = 1, dpi = 300)
+
+```
+
+
+## Productive / Unproductive comments
 
 "productive" vs. "unproductive" comments 
 
@@ -244,8 +342,9 @@ code_categories <- tribble(
 
 
 
-```{r}
 
+
+```{r}
 codes_df %>%
   mutate(code = tidyr::replace_na(code, 'NA')) %>%
   left_join(code_categories) %>%
@@ -270,6 +369,10 @@ codes_df %>%
   theme(panel.grid.minor = element_blank())  # turn off minor grid
 
 ```
+
+# URL analysis
+
+## Duplicate URLS
 
 Upvotes for duplicate URL submissions:
 
@@ -347,3 +450,20 @@ p
 
 ggsave('duplicate_url_scores.png', plot = last_plot(), scale = 1, dpi = 300)
 ```
+
+
+## Motivation
+
+
+```{r}
+quotes_df %>%
+  left_join(codes_df) %>%
+  filter(code == 'motivation') %>%
+  select(doc_id, quote) %>%
+  readr::write_csv(., file = file.path('motivations.csv'))
+```
+
+
+
+
+

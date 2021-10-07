@@ -394,7 +394,6 @@ quote_id,doc_id,code
 356:1,gictkt3,arguing
 357:1,gictkuw,saving
 358:1,gictl7f,evidence
-358:2,gictl7f,NA
 359:1,gictm5w,arguing
 360:1,gictmrk,evidence
 361:1,gictncr,evidence
@@ -580,7 +579,6 @@ quote_id,doc_id,code
 500:1,giczmdl,strategy
 501:1,giczomf,evidence
 502:1,giczsal,evidence
-506:1,giczv6b,NA
 506:2,giczv6b,encouragement
 507:1,giczv8f,evidence
 508:1,giczx9p,evidence
@@ -648,7 +646,6 @@ quote_id,doc_id,code
 557:1,gid28lf,removal
 560:1,gid2dk2,evidence
 561:1,gid2fv5,evidence
-563:1,gid2ijy,NA
 564:1,gid2jg9,evidence
 565:1,gid2kuc,encouragement
 567:1,gid2moh,evidence
@@ -669,7 +666,6 @@ quote_id,doc_id,code
 583:1,gid3w0e,strategy
 583:2,gid3w0e,evidence
 585:1,gid41jo,evidence
-586:1,gid4572,NA
 587:1,gid46m5,evidence
 588:1,gid48vl,saving
 589:1,gid4a6v,evidence
@@ -691,7 +687,6 @@ quote_id,doc_id,code
 605:1,gid5be3,saving
 606:1,gid5cdw,encouragement
 609:1,gid5f3h,evidence
-611:1,gid5iqn,NA
 611:2,gid5iqn,seeding
 612:1,gid5tev,evidence
 614:1,gid65lc,evidence
@@ -784,7 +779,6 @@ quote_id,doc_id,code
 711:1,gidbzwy,motivation
 712:1,gidc0wd,evidence
 714:1,gidc4k7,analysis
-715:1,gidc56e,NA
 745:1,gidcapn,analysis
 745:1,gidcapn,evidence
 746:1,gidcbac,strategy
@@ -833,7 +827,6 @@ quote_id,doc_id,code
 786:2,gidf98n,evidence
 787:1,gidfc5y,caution
 787:1,gidfc5y,motivation
-790:1,gidfjnh,NA
 791:1,gidfosw,strategy
 792:1,gidfoxk,strategy
 793:1,gidfqm2,fbi
@@ -852,7 +845,6 @@ quote_id,doc_id,code
 812:1,gidgtq1,strategy
 813:1,gidgzmx,caution
 813:1,gidgzmx,r/datahorders
-813:2,gidgzmx,NA
 814:1,gidh0ui,fbi
 814:1,gidh0ui,motivation
 816:1,gidh87t,analysis
@@ -882,7 +874,6 @@ quote_id,doc_id,code
 839:1,gidjeny,encouragement
 841:1,gidjp20,analysis
 841:1,gidjp20,doxing
-843:1,gidju3l,NA
 843:2,gidju3l,saving
 846:1,gidjvyw,encouragement
 847:1,gidjwbx,doxing
@@ -917,7 +908,6 @@ quote_id,doc_id,code
 892:1,gidnarr,evidence
 898:1,gido1m8,outside_project
 900:1,gido7r5,evidence
-901:1,gidoe4z,NA
 902:1,gidofrk,strategy
 903:1,gidookw,motivation
 904:1,gidoozd,arguing
@@ -1087,7 +1077,6 @@ quote_id,doc_id,code
 1057:1,gie28k5,arguing
 1058:1,gie2bc3,evidence
 1059:1,gie2gqk,arguing
-1060:1,gie2jmp,NA
 1062:1,gie2l7e,strategy
 1066:1,gie2thl,evidence
 1066:1,gie2thl,removal
@@ -1336,7 +1325,6 @@ quote_id,doc_id,code
 1363:1,gieodn9,seeding
 1363:3,gieodn9,seeding
 1364:1,gieouj4,encouragement
-1368:1,giepjxx,NA
 1368:2,giepjxx,encouragement
 1370:1,giepkli,evidence
 1370:2,giepkli,evidence
@@ -1371,7 +1359,6 @@ quote_id,doc_id,code
 1401:1,giert6l,fbi
 1403:1,gies5aq,outside_project
 1404:4,giesanc,removal
-1404:5,giesanc,NA
 1405:1,giesiv5,evidence
 1405:2,giesiv5,motivation
 1406:1,giesj5y,evidence
@@ -1622,7 +1609,6 @@ quote_id,doc_id,code
 1692:1,gifrcwv,motivation
 1693:1,gifrgek,fbi
 1693:1,gifrgek,motivation
-1694:1,gifrk6i,NA
 1695:1,gifrmbq,strategy
 1696:1,gifrp7y,strategy
 1697:1,gifrpya,encouragement
@@ -1745,7 +1731,6 @@ quote_id,doc_id,code
 1859:1,gigquom,evidence
 1863:1,gigrrre,evidence
 1864:1,gigs2jx,motivation
-1866:1,gigs4sn,NA
 1869:1,gigslue,motivation
 1871:1,gigstj8,!!!
 1871:1,gigstj8,doxing
@@ -2025,7 +2010,6 @@ quote_id,doc_id,code
 2175:1,gijy5mu,strategy
 2178:1,gijzjr4,strategy
 2179:1,gik04nt,analysis
-2180:1,gik0xq7,NA
 2180:2,gik0xq7,seeding
 2181:1,gik1xuu,analysis
 2182:1,gik21f6,strategy
@@ -2308,7 +2292,6 @@ quote_id,doc_id,code
 2524:1,gitem8n,strategy
 2525:1,gith17d,evidence
 2526:1,githa8w,strategy
-2527:1,githkde,NA
 2528:1,gitl257,evidence
 2530:1,gitmz6w,evidence
 2531:1,gitq5rd,evidence
