@@ -209,23 +209,27 @@ p <-
   mutate(hourly = floor_date(created_utc, 'hours')) %>%
   count(hourly) %>%
   ggplot(aes(x = hourly, y = n)) +
-  #geom_line(aes(y = n)) +
   geom_bar(stat = 'identity') +
   labs(title = 'Comment rate during peak period',
-       subtitle = 'Comments per hour between January 6th and January 10th') +
+       subtitle = 'January 6-10th') +
   xlab(label = '') +
   ylab(label = 'comments per hour') 
 
 p
 
-ggsave('comment_rate_peak.png', plot = last_plot(), scale = 1, dpi = 300)
+ggsave(
+  filename = 'comment_rate_peak.png', 
+  plot = last_plot(), 
+  path = file.path('..', 'plots'),
+  scale = 1, 
+  dpi = 300
+)
 
 ```
 
 ## Codes 
 
 Total number of codes assigned
-
 
 ```{r}
 nrow(codes_df)
@@ -260,8 +264,7 @@ non_activity_codes <- c(
   'r/datahorders', 
   'outside_project', 
   'scope', 
-  'participants', 
-  'fbi'
+  'participants'
 )
 
 
@@ -273,19 +276,33 @@ p <- codes_df %>%
   ggplot(aes(x = code, y = n)) +
   geom_bar(stat = 'identity', width = 0.5, fill = 'tomato2') +
   coord_flip() +
-  labs(title = 'Thread activities') +
+  labs(title = 'Thread Activity') +
   xlab(label = '') +
-  ylab(label = 'Number of comments')
+  ylab(label = 'comments')
 
 p
 
-ggsave('thread_activities.png', plot = last_plot(), scale = 1, dpi = 300)
+ggsave(
+  filename = 'thread_activities.png', 
+  plot = last_plot(),
+  path = file.path('..', 'plots'),
+  scale = 1, 
+  dpi = 300
+)
 
 ```
 
 Code stats
 
 ```{r}
+fill_values <- c(
+  'low' = '#7ed9d6', 
+  'med' = '#cad692', 
+  'high' = '#ed8aa6'
+)
+
+engagement_levels <- c('low', 'med', 'high')
+
 p <- reddit_df %>%
   select(doc_id = comment_id, author, score) %>%
   left_join(codes_df) %>%
@@ -294,18 +311,28 @@ p <- reddit_df %>%
   filter(!is.na(activity_level)) %>%
   filter(!(code %in% non_activity_codes)) %>%
   group_by(code) %>%
-  ggplot(aes(x = code, fill = activity_level)) +
+  ggplot(aes(x = code, 
+             fill = factor(activity_level, levels = c('high', 'med', 'low')))) +
   geom_bar(stat = 'count', 
-           position = position_dodge(),
+           position = position_dodge(), 
            width = 0.7) +
-  scale_fill_manual(values = c('low' = 'firebrick', 'med' = 'steelblue', 'high' = 'darkgreen')) +
+  scale_fill_discrete(name = 'Engagement',
+                      breaks = engagement_levels) +
+  scale_fill_manual(values = fill_values, name = 'Engagement') +
   xlab('') +
-  labs(title = 'Thread activities by author engagement level') +
+  ylab('comments') +
+  labs(title = 'Thread Activity by Author Engagement') +
   coord_flip()
 
 p
 
-ggsave('activities_by_engagement_level.png', plot = last_plot(), scale = 1, dpi = 300)
+ggsave(
+  filename = 'activities_by_engagement_level.png', 
+  path = file.path('..', 'plots'),
+  plot = last_plot(), 
+  scale = 1, 
+  dpi = 300
+)
 
 ```
 
@@ -448,7 +475,13 @@ p <-
 
 p
 
-ggsave('duplicate_url_scores.png', plot = last_plot(), scale = 1, dpi = 300)
+ggsave(
+  filename = 'duplicate_url_scores.png',
+  path = file.path('..', 'plots'),
+  plot = last_plot(), 
+  scale = 1, 
+  dpi = 300
+)
 ```
 
 
@@ -463,7 +496,14 @@ quotes_df %>%
   readr::write_csv(., file = file.path('motivations.csv'))
 ```
 
+FBI Quotes
 
+```{r}
+quotes_df %>%
+  left_join(codes_df) %>%
+  filter(code == 'fbi') %>%
+  select(quote, doc_id)
 
+```
 
 
